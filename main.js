@@ -36,40 +36,40 @@ const MODELS = [
   {
     id: '15pm', name: 'iPhone 15 Pro Max', note: '5× 四棱镜长焦',
     lenses: [
-      { zoom: '0.5×', focal: 13, f: 2.2 },
-      { zoom: '1×', focal: 24, f: 1.78 },
-      { zoom: '5×', focal: 120, f: 2.8 },
+      { zoom: '0.5×', focal: 13, f: 2.2, shutter: 1 / 320, iso: 50 },
+      { zoom: '1×', focal: 24, f: 1.78, shutter: 1 / 240, iso: 80 },
+      { zoom: '5×', focal: 120, f: 2.8, shutter: 1 / 500, iso: 64 },
     ],
     def: 2,
   },
   {
     id: '16pm', name: 'iPhone 16 Pro Max', note: '5× 四棱镜长焦',
     lenses: [
-      { zoom: '0.5×', focal: 13, f: 2.2 },
-      { zoom: '1×', focal: 24, f: 1.78 },
-      { zoom: '5×', focal: 120, f: 2.8 },
+      { zoom: '0.5×', focal: 13, f: 2.2, shutter: 1 / 320, iso: 50 },
+      { zoom: '1×', focal: 24, f: 1.78, shutter: 1 / 240, iso: 80 },
+      { zoom: '5×', focal: 120, f: 2.8, shutter: 1 / 500, iso: 64 },
     ],
     def: 2,
   },
   {
     id: '17pm', name: 'iPhone 17 Pro Max', note: '4× 100mm，8× 200mm',
     lenses: [
-      { zoom: '0.5×', focal: 13, f: 2.2 },
-      { zoom: '1×', focal: 24, f: 1.78 },
-      { zoom: '2×', focal: 48, f: 1.78 },
-      { zoom: '4×', focal: 100, f: 2.8 },
-      { zoom: '8×', focal: 200, f: 2.8 },
+      { zoom: '0.5×', focal: 13, f: 2.2, shutter: 1 / 320, iso: 50 },
+      { zoom: '1×', focal: 24, f: 1.78, shutter: 1 / 240, iso: 80 },
+      { zoom: '2×', focal: 48, f: 1.78, shutter: 1 / 300, iso: 80 },
+      { zoom: '4×', focal: 100, f: 2.8, shutter: 1 / 500, iso: 64 },
+      { zoom: '8×', focal: 200, f: 2.8, shutter: 1 / 640, iso: 100 },
     ],
     def: 3,
   },
   {
     id: '18pm', name: 'iPhone 18 Pro Max', note: '主摄可变光圈 ƒ/1.48–4.0',
     lenses: [
-      { zoom: '0.5×', focal: 13, f: 2.2 },
-      { zoom: '1×', focal: 24, f: 1.48 },
-      { zoom: '2×', focal: 48, f: 1.48 },
-      { zoom: '4×', focal: 100, f: 2.8 },
-      { zoom: '8×', focal: 200, f: 2.8 },
+      { zoom: '0.5×', focal: 13, f: 2.2, shutter: 1 / 320, iso: 50 },
+      { zoom: '1×', focal: 24, f: 1.48, shutter: 1 / 320, iso: 64 },
+      { zoom: '2×', focal: 48, f: 1.48, shutter: 1 / 400, iso: 64 },
+      { zoom: '4×', focal: 100, f: 2.8, shutter: 1 / 500, iso: 64 },
+      { zoom: '8×', focal: 200, f: 2.8, shutter: 1 / 640, iso: 100 },
     ],
     def: 3,
   },
@@ -281,6 +281,30 @@ function currentLens() {
   return m.lenses[state.lens] || m.lenses[m.def];
 }
 
+// 缺坐标时用：几处山岳/景区附近随机抖动，看起来像真的
+const SPOTS = [
+  [27.457, 114.174], [30.048, 118.163], [29.517, 91.117],
+  [31.655, 103.860], [25.050, 102.700], [36.250, 103.800],
+  [43.100, 86.800], [22.980, 113.750], [39.900, 116.400],
+];
+
+function makeFakeGps() {
+  const [lat, lon] = SPOTS[Math.floor(Math.random() * SPOTS.length)];
+  const jitter = () => (Math.random() - 0.5) * 0.06;
+  const toParts = (v) => {
+    const deg = Math.floor(v);
+    const m = (v - deg) * 60;
+    const min = Math.floor(m);
+    return { deg, min, sec: (m - min) * 60 };
+  };
+  return {
+    lat: toParts(lat + jitter()),
+    lon: toParts(lon + jitter()),
+    latRef: 'N',
+    lonRef: 'E',
+  };
+}
+
 function buildMeta() {
   const exif = (photo && photo.exif) || {};
   let device = exif.model || exif.make || 'iPhone';
@@ -297,15 +321,22 @@ function buildMeta() {
     }
   }
 
+  // 照片里没有的，按所选机型的镜头补上；选了自动就不补
+  const lens = currentLens();
+  const shutter = exif.exposure || (lens && lens.shutter) || 0;
+  const iso = exif.iso || (lens && lens.iso) || 0;
+
   const parts = [];
   if (focal) parts.push(`${Math.round(focal)}mm`);
   if (fnum) parts.push(`f/${fmtNumber(fnum, 2)}`);
-  const ex = fmtExposure(exif.exposure);
+  const ex = fmtExposure(shutter);
   if (ex) parts.push(ex);
-  if (exif.iso) parts.push(`ISO${Math.round(exif.iso)}`);
+  if (iso) parts.push(`ISO${Math.round(iso)}`);
 
+  // 坐标：优先用照片的，没有就用这张图生成的那组
+  const g = exif.gps || (photo && photo.fakeGps) || null;
   let gps = '';
-  if (exif.gps) gps = `${fmtCoord(exif.gps.lat, exif.gps.latRef)} ${fmtCoord(exif.gps.lon, exif.gps.lonRef)}`;
+  if (g) gps = `${fmtCoord(g.lat, g.latRef)} ${fmtCoord(g.lon, g.lonRef)}`;
 
   return { device, date: fmtDate(exif.date) || fmtDate(new Date().toISOString()), params: parts.join(' '), gps };
 }
@@ -480,7 +511,7 @@ function samplePx(data, sw, sh, x, y, ch) {
 }
 
 // 把胶囊覆盖的那块画面按 SDF 折射，返回一张带透明边的 canvas。
-// 关键是位移在“边缘最大、向中心衰减”，这样边沿才会把画面压出弯折。
+// 关键是位移在"边缘最大、向中心衰减"，这样边沿才会把画面压出弯折。
 function refractLayer(baseCanvas, blurCanvas, bx, by, bw, bh, r, opt) {
   const w = Math.ceil(bw);
   const h = Math.ceil(bh);
@@ -838,6 +869,7 @@ async function openFile(file) {
 }
 
 function setPhoto(next) {
+  next.fakeGps = makeFakeGps();
   photo = next;
   cache.key = null;
   cache.blur = null;
