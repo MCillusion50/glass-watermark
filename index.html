@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="玻璃水印">
+<title>玻璃水印</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main id="stage">
+    <section id="empty" class="empty">
+      <div class="glass-card">
+        <svg class="mark" viewBox="0 0 96 96" width="84" height="84" aria-hidden="true">
+          <rect width="96" height="96" rx="22" fill="#FF2E6B"/>
+          <path d="M0 70q12-8 24 0t24 0 24 0 24 0v26H0z" fill="#fff" opacity=".18"/>
+          <path d="M0 79q12-6 24 0t24 0 24 0 24 0v17H0z" fill="#fff" opacity=".30"/>
+          <g fill="none" stroke="#fff" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="23.5" y="24" width="49" height="34.5" rx="9.5"/>
+            <circle cx="48" cy="41.5" r="9.4"/>
+            <path d="M36.8 24l4.1-7.1h14.2l4.1 7.1"/>
+          </g>
+        </svg>
+        <h1>给照片加个玻璃水印</h1>
+        <p>读取机型、镜头、光圈、快门、ISO 与坐标</p>
+        <button id="pick" class="primary">选择照片</button>
+        <button id="demo" class="ghost">先用示例试试</button>
+      </div>
+      <input id="file" type="file" accept="image/*" hidden>
+    </section>
+
+    <section id="edit" class="edit" hidden>
+      <div id="photoWrap" class="photo-wrap"></div>
+      <div class="toolbar">
+        <button id="change" class="tool">换图</button>
+        <button id="modelBtn" class="tool">型号</button>
+        <button id="adjBtn" class="tool">调参</button>
+        <button id="save" class="tool primary">保存</button>
+      </div>
+    </section>
+
+    <section id="modelSheet" class="sheet" hidden>
+      <div class="sheet-inner">
+        <div class="sheet-head"><span>机型与镜头</span><button class="x" data-close>✕</button></div>
+        <div class="scroll">
+          <div id="modelList" class="model-list"></div>
+          <div class="sub">镜头</div>
+          <div id="lensRow" class="lens-row"></div>
+          <p class="note">换了机型就按那台的参数出图；快门、ISO 仍取自照片本身。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="adjSheet" class="sheet panel" hidden>
+      <div class="sheet-inner">
+        <div class="sheet-head"><span>玻璃参数</span><button class="x" data-close>✕</button></div>
+        <div class="scroll">
+          <div id="controls" class="controls"></div>
+          <div class="row-toggle">
+            <span>显示坐标</span>
+            <button id="gpsToggle" class="switch on" role="switch" aria-checked="true"><i></i></button>
+          </div>
+          <div class="row-toggle">
+            <span>增强画质</span>
+            <button id="enhanceToggle" class="switch on" role="switch" aria-checked="true"><i></i></button>
+          </div>
+          <button id="reset" class="ghost wide">恢复默认</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="sheet" class="sheet" hidden>
+      <div class="sheet-inner">
+        <div class="sheet-head">
+          <span>长按图片 → 存储到照片</span>
+          <button id="close" class="x">✕</button>
+        </div>
+        <div id="result" class="result"></div>
+        <div class="sheet-foot">
+          <a id="dl" class="ghost" download="watermark.jpg">下载文件</a>
+          <button id="back" class="ghost">返回编辑</button>
+        </div>
+      </div>
+    </section>
+
+    <button id="backBall" class="ball" hidden aria-label="返回">‹</button>
+    <div id="toast" class="toast"></div>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
